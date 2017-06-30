@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--suppress ALL -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<!-- 1：配置授权缓存管理器, Spring Cache + Redis  -->
+	<bean id="shiroCacheManager" class="com.bounter.shiro.cache.ShiroCacheManager">
+		<property name="cacheManager" ref="cacheManager" />
+	</bean>
+	
+	<!-- 2：配置安全管理器 -->
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <property name="realm" ref="bterRealm"/>
+        <property name="cacheManager" ref="shiroCacheManager"/>
+    </bean>
+    
+    <!-- 3：配置Shiro过滤器，给认证和授权指定对应的过滤器 -->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager"/>
+        <!-- 身份认证失败时跳转的路径 -->
+        <property name="loginUrl" value="/unauthenticate"/>
+        <!-- 权限不足时跳转的路径 -->
+        <property name="unauthorizedUrl" value="/unauthorized"/>
+        <!-- 配置需要授权的地址对应的过滤器 -->
+        <!-- /admin?=authc  表示可以请求以admin开头的字符串，如xxx/adminfefe，但无法匹配多个，即xxx/admindf/admin是不行的 
+			 /admin*=authc  表示可以匹配零个或者多个字符，如/admin，/admin1，/admin123，但是不能匹配/admin/abc这种 
+			 /admin/**=authc  表示可以匹配零个或者多个路径，如/admin，/admin/ad/adfdf等 --> 
+        <property name="filterChainDefinitions">
+            <value>
+	            /login=anon
+	            /swagger*=anon
+	            /role/**=roles[admin]
+	            /permission/**=perms[user:view]
+                /**=authc
+            </value>
+        </property>
+    </bean>
+    
+    <!-- 4：配置生命周期处理器 -->
+    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+</beans>
